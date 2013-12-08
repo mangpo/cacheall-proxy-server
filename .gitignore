@@ -1,0 +1,5 @@
+.hg*
+docs
+examples
+runtests.sh
+test
