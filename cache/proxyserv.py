@@ -10,7 +10,7 @@ except ImportError:
   
 from SocketServer import TCPServer, StreamRequestHandler, ThreadingMixIn
 from httpmessage import HttpMessage
-import commands
+import commands, os
 
 read_from_cache = True
 save_to_cache = True
@@ -42,9 +42,12 @@ class ProxyHandler(StreamRequestHandler):
     status, output = commands.getstatusoutput("ls " + filepath)
     if read_from_cache and status == 0 and not (output[:17] == "ls: cannot access"):
       print "CACHE-HIT", filepath
-      f = open(filepath, 'r')
-      response = f.read()
-      f.close()
+      response = ".\n"
+      while response == ".\n":
+        f = open(filepath, 'r')
+        response = f.read()
+        f.close()
+        print "IN-CACHE", response
       self.connection.send(response)
     else:
       print "CACHE-MISS"
@@ -52,6 +55,9 @@ class ProxyHandler(StreamRequestHandler):
       # print request.cache_control, request.accept
       # print request.user_agent, request.accept_encoding, request.accept_language
       # print request.cookie
+
+      # placeholder for locking
+      os.system("echo . > " + filepath)
       response = request.fetch_response()
       response.connection = 'close'
       print "RESP", response.firstline, response.status_code, response.server, response.location
@@ -63,7 +69,7 @@ class ProxyHandler(StreamRequestHandler):
       self.connection.send(response)
     
 if __name__ == "__main__":
-  server_address = ('127.0.0.1', 8000)
+  server_address = ('127.0.0.1', 1234)
   proxyserver = ThreadingProxyServer(server_address, ProxyHandler)
   print 'proxy serving on %r' % (server_address,)
   try:
