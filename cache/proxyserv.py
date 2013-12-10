@@ -10,12 +10,18 @@ except ImportError:
   
 from SocketServer import TCPServer, StreamRequestHandler, ThreadingMixIn
 from httpmessage import HttpMessage
+import httpmessage.exc as exc
+
 from multiprocessing import Lock
-import commands, os
+import commands, os, hashlib, threading
 
 read_from_cache = True
 save_to_cache = True
 lock = Lock()
+redirect_map = {}
+
+working = []
+working_lock = Lock()
 
 class ThreadingProxyServer(ThreadingMixIn, TCPServer):
   allow_reuse_address = True
@@ -26,31 +32,74 @@ class ProxyHandler(StreamRequestHandler):
   """Buffers the entire request before sending it to server. Buffers entire
   response before sending it to client. Doesn't work at all well for large
   resources (like Youtube videos)."""
-  
-  def handle(self):
-    request = HttpMessage(socket=self.connection)
-    print "BEFORE", request.method, request.host, request.request_uri
 
-    # Need to modify uri because some websites, such as thefreedictionry.com,
-    # handle uri that has host as substring incorrectly.
-    pos = request.request_uri.find(request.host)
-    if pos >= 0:
-      request.request_uri = request.request_uri[pos+len(request.host):]
+  def request_to_server(self):
+    request = self.request
+    filepath = self.filepath
+    key = self.key
 
-    key = request.host + request.request_uri
-    filepath = "../.cache_12_07/" + key.replace("/","#")
-    print "AFTER", request.method, key #, filepath
+    print "SEND REQUEST"
+    response = request.fetch_response()
+    response.connection = 'close'
+    print "RESP", response.firstline, response.status_code, response.server, response.location
     
-    lock.acquire()
+    # Remove redirect cycle of size two.
+    if response.location:
+      print "REDIRECT!!!!!!!!!!!!!!!"
+      redirect_url = response.location
+      for part in response.location.split("&"):
+        if part[0:9] == "continue=":
+          redirect_url = part[9:]
+          break
+          
+      if redirect_url[0:7] == "http://":
+        redirect_url = redirect_url[7:]
+        
+      redirect_url = redirect_url.replace("%3D","=")
+      redirect_map[key] = redirect_url
+      print "MAP", key, redirect_url
+        
+      # Detect cycle.
+      if redirect_url in redirect_map and redirect_map[redirect_url] == key:
+        print "DEL", redirect_url
+        del redirect_map[redirect_url]
+        st, o = commands.getstatusoutput("rm " + self.key_to_filepath(redirect_url))
+        print "rm", self.key_to_filepath(redirect_url)
+        print st, o
+    # END: Remove redirect cycle of size two.
+
+    response = str(response)
+    if save_to_cache:
+      f = open(filepath, 'w')
+      f.write(response)
+      f.close()
+      
+    working_lock.acquire()
+    working.remove(filepath)
+    working_lock.release()
+
+    self.connection.send(response)
+    
+  def cache_or_request(self):
+    filepath = self.filepath
+    # lock.acquire()
     status, output = commands.getstatusoutput("ls " + filepath)
-    if read_from_cache and status == 0 and not (output[:17] == "ls: cannot access"):
-      lock.release()
-      print "CACHE-HIT", filepath
+    if read_from_cache and status == 0 and output.find("cannot access") == -1:
+      # lock.release()
       response = ".\n"
       while response == ".\n":
-        f = open(filepath, 'r')
-        response = f.read()
-        f.close()
+        print "loop on ."
+        print filepath
+        
+        try:
+          f = open(filepath, 'r')
+          response = f.read()
+          f.close()
+        except:
+          self.cache_or_request()
+          return
+
+      print "CACHE-HIT", filepath
       self.connection.send(response)
     else:
       print "CACHE-MISS"
@@ -59,26 +108,77 @@ class ProxyHandler(StreamRequestHandler):
       # print request.user_agent, request.accept_encoding, request.accept_language
       # print request.cookie
 
-      # placeholder for locking
-      os.system("echo . > " + filepath)
-      lock.release()
+      try:
+        # Placeholder for locking.
+        working_lock.acquire()
+        working.append(filepath)
+        working_lock.release()
 
-      response = request.fetch_response()
-      response.connection = 'close'
-      print "RESP", response.firstline, response.status_code, response.server, response.location
-      response = str(response)
-      if save_to_cache:
-        f = open(filepath, 'w')
-        f.write(response)
-        f.close()
-      self.connection.send(response)
+        os.system("echo . > " + filepath)
+        # lock.release()
+        self.request_to_server()
+      except Exception as e:
+        try:
+          os.system("rm " + filepath)
+          print "CLEAN-UP: rm", filepath
+        except:
+          pass
+        raise e
+
+  def key_to_filepath(self, key):
+    if len(key) > 255:
+      filename = hashlib.sha512(key).hexdigest()
+    else:
+      filename = key
+
+    return "../.cache/" + filename.replace("/","#").replace("&","~").replace(";",":")
+  
+  def handle(self):
+    try:
+      request = HttpMessage(socket=self.connection)
+      self.request = request
+      print "BEFORE", request.method, request.host, request.request_uri
+      
+      # Need to modify uri because some websites, such as thefreedictionry.com,
+      # handle uri that has host as substring incorrectly.
+      pos = request.request_uri.find(request.host)
+      if pos >= 0:
+        request.request_uri = request.request_uri[pos+len(request.host):]
+        
+      key = request.host + request.request_uri
+      self.key = key
+      filepath = self.key_to_filepath(key)
+      self.filepath = filepath
+      print "AFTER", request.method, key #, filepath
+    
+      self.cache_or_request()
+
+    # except exc.MalformedFirstline:
+    #   self.connection.send("")
+    except Exception as e:
+      f = open('log', 'a')
+      f.write(str(type(e)) + ', ' + str(e))
+      f.close()
+
+      raise e
+
+      # print "---------------------------------------------------------------"
+      # print type(e), e
+      # print "---------------------------------------------------------------"
+
+    #   self.connection.send("")
     
 if __name__ == "__main__":
   server_address = ('127.0.0.1', 1234)
+  f = open('log', 'w')
+  f.close()
   proxyserver = ThreadingProxyServer(server_address, ProxyHandler)
   print 'proxy serving on %r' % (server_address,)
   try:
     proxyserver.serve_forever()
   except KeyboardInterrupt:
+    for f in working:
+      print "CLEAN-UP: rm", f
+      os.system("rm " + f)
     print '\nexiting...'
 
