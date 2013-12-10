@@ -10,10 +10,12 @@ except ImportError:
   
 from SocketServer import TCPServer, StreamRequestHandler, ThreadingMixIn
 from httpmessage import HttpMessage
+from multiprocessing import Lock
 import commands, os
 
 read_from_cache = True
 save_to_cache = True
+lock = Lock()
 
 class ThreadingProxyServer(ThreadingMixIn, TCPServer):
   allow_reuse_address = True
@@ -36,18 +38,19 @@ class ProxyHandler(StreamRequestHandler):
       request.request_uri = request.request_uri[pos+len(request.host):]
 
     key = request.host + request.request_uri
-    filepath = "../.cache/" + key.replace("/","#")
+    filepath = "../.cache_12_07/" + key.replace("/","#")
     print "AFTER", request.method, key #, filepath
     
+    lock.acquire()
     status, output = commands.getstatusoutput("ls " + filepath)
     if read_from_cache and status == 0 and not (output[:17] == "ls: cannot access"):
+      lock.release()
       print "CACHE-HIT", filepath
       response = ".\n"
       while response == ".\n":
         f = open(filepath, 'r')
         response = f.read()
         f.close()
-        print "IN-CACHE", response
       self.connection.send(response)
     else:
       print "CACHE-MISS"
@@ -58,6 +61,8 @@ class ProxyHandler(StreamRequestHandler):
 
       # placeholder for locking
       os.system("echo . > " + filepath)
+      lock.release()
+
       response = request.fetch_response()
       response.connection = 'close'
       print "RESP", response.firstline, response.status_code, response.server, response.location

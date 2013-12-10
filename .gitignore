@@ -3,3 +3,4 @@ docs
 examples
 runtests.sh
 test
+*.pyc
