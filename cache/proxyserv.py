@@ -47,7 +47,7 @@ class ProxyHandler(StreamRequestHandler):
     
     # Remove redirect cycle of size two.
     if response.location:
-      print "REDIRECT!!!!!!!!!!!!!!!"
+      print "REDIRECT"
       redirect_url = response.location
       for part in response.location.split("&"):
         if part[0:9] == "continue=":
@@ -88,20 +88,53 @@ class ProxyHandler(StreamRequestHandler):
     status, output = commands.getstatusoutput("ls " + filepath)
     if read_from_cache and status == 0 and output.find("cannot access") == -1:
       # lock.release()
-      response = "~empty~\n"
-      while response == "~empty~\n":
+      try:
+        f = open(filepath, 'r')
+        firstline = f.readline()
+        create_date = f.readline().split(" ")
+        f.close()
+      except:
+        print "CALL CACHE_OR_REQUEST"
+        self.cache_or_request()
+        return
+      print "IN-CACHE", firstline
+      while firstline == "~empty~\n":
         print "loop on ~empty~"
         print filepath
+
+        # print create_date
+        create_day = int(create_date[2])
+        create_time = [int(x) for x in create_date[3].split(":")]
+        
+        status, current_date = commands.getstatusoutput("date")
+        current_date = current_date.split(" ")
+        current_day = int(current_date[2])
+        current_time = [int(x) for x in current_date[3].split(":")]
+
+        if current_day != create_day or \
+              current_time[0]*60 + current_time[1] > create_time[0]*60 + create_time[1] + 1:
+          os.system("rm " + filepath)
+          print "BREAKING THE LOOP!!!!!!!!!!!!!!!!!!!!!!!!!"
         
         try:
           f = open(filepath, 'r')
-          response = f.read()
+          firstline = f.readline()
+          create_date = f.readline().split(" ")
           f.close()
         except:
+          print "CALL CACHE_OR_REQUEST"
           self.cache_or_request()
           return
 
       print "CACHE-HIT", filepath
+      try:
+        f = open(filepath, 'r')
+        response = f.read()
+        f.close()
+      except:
+        print "CALL CACHE_OR_REQUEST"
+        self.cache_or_request()
+        return
       self.connection.send(response)
     else:
       print "CACHE-MISS"
@@ -116,7 +149,7 @@ class ProxyHandler(StreamRequestHandler):
         working.append(filepath)
         working_lock.release()
 
-        os.system("echo ~empty~ > " + filepath)
+        os.system("echo ~empty~ > " + filepath + " & date >> " + filepath)
         # lock.release()
         self.request_to_server()
       except Exception as e:
@@ -155,14 +188,15 @@ class ProxyHandler(StreamRequestHandler):
     
       self.cache_or_request()
 
-    # except exc.MalformedFirstline:
-    #   self.connection.send("")
-    except Exception as e:
-      f = open('error.log', 'a')
-      f.write(str(type(e)) + ', ' + str(e) + '\n')
-      f.close()
+    except exc.MalformedFirstline:
+      # self.connection.send("")
+      pass
+    # except Exception as e:
+    #   f = open('error.log', 'a')
+    #   f.write(str(type(e)) + ', ' + str(e) + '\n')
+    #   f.close()
 
-      raise e
+    #   raise e
 
       # print "---------------------------------------------------------------"
       # print type(e), e
