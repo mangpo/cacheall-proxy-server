@@ -23,6 +23,8 @@ redirect_map = {}
 working = []
 working_lock = Lock()
 
+cache_dir = "../.cache"
+
 class ThreadingProxyServer(ThreadingMixIn, TCPServer):
   allow_reuse_address = True
   daemon_threads = True
@@ -131,7 +133,7 @@ class ProxyHandler(StreamRequestHandler):
     else:
       filename = key
 
-    return "../.cache/" + filename.replace("/","#").replace("&","~").replace(";",":")
+    return cache_dir + "/" + filename.replace("/","#").replace("&","~").replace(";",":")
   
   def handle(self):
     try:
@@ -174,6 +176,15 @@ if __name__ == "__main__":
   f.close()
   proxyserver = ThreadingProxyServer(server_address, ProxyHandler)
   print 'proxy serving on %r' % (server_address,)
+  print 'sys.args', len(sys.argv)
+  os.system("pwd")
+
+  if len(sys.argv) > 1:
+    cache_dir = sys.argv[1]
+
+  os.system("mkdir " + cache_dir)
+  print cache_dir
+
   try:
     proxyserver.serve_forever()
   except KeyboardInterrupt:
