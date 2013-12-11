@@ -88,9 +88,9 @@ class ProxyHandler(StreamRequestHandler):
     status, output = commands.getstatusoutput("ls " + filepath)
     if read_from_cache and status == 0 and output.find("cannot access") == -1:
       # lock.release()
-      response = ".\n"
-      while response == ".\n":
-        print "loop on ."
+      response = "~empty~\n"
+      while response == "~empty~\n":
+        print "loop on ~empty~"
         print filepath
         
         try:
@@ -116,7 +116,7 @@ class ProxyHandler(StreamRequestHandler):
         working.append(filepath)
         working_lock.release()
 
-        os.system("echo . > " + filepath)
+        os.system("echo ~empty~ > " + filepath)
         # lock.release()
         self.request_to_server()
       except Exception as e:
@@ -133,7 +133,7 @@ class ProxyHandler(StreamRequestHandler):
     else:
       filename = key
 
-    return cache_dir + "/" + filename.replace("/","#").replace("&","~").replace(";",":")
+    return cache_dir + "/" + filename.replace("/","#").replace("&","~").replace(";",":").replace("|","-").replace("<","[").replace(">","]").replace("?",",")
   
   def handle(self):
     try:
@@ -158,8 +158,8 @@ class ProxyHandler(StreamRequestHandler):
     # except exc.MalformedFirstline:
     #   self.connection.send("")
     except Exception as e:
-      f = open('log', 'a')
-      f.write(str(type(e)) + ', ' + str(e))
+      f = open('error.log', 'a')
+      f.write(str(type(e)) + ', ' + str(e) + '\n')
       f.close()
 
       raise e
