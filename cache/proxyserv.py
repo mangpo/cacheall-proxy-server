@@ -153,11 +153,8 @@ class ProxyHandler(StreamRequestHandler):
         # lock.release()
         self.request_to_server()
       except Exception as e:
-        try:
-          os.system("rm " + filepath)
-          print "CLEAN-UP: rm", filepath
-        except:
-          pass
+        os.system("rm " + filepath)
+        print "CLEAN-UP: rm", filepath
         raise e
 
   def key_to_filepath(self, key):
