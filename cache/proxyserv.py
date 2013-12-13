@@ -13,7 +13,7 @@ from httpmessage import HttpMessage
 import httpmessage.exc as exc
 
 from multiprocessing import Lock
-import commands, os, hashlib, threading
+import commands, os, hashlib, threading, traceback
 
 read_from_cache = True
 save_to_cache = True
@@ -84,17 +84,19 @@ class ProxyHandler(StreamRequestHandler):
     
   def cache_or_request(self):
     filepath = self.filepath
-    # lock.acquire()
+    print "LOCK"
+    lock.acquire()
     status, output = commands.getstatusoutput("ls " + filepath)
     if read_from_cache and status == 0 and output.find("cannot access") == -1:
-      # lock.release()
+      lock.release()
+      print "UNLOCK"
       try:
         f = open(filepath, 'r')
         firstline = f.readline()
         create_date = f.readline().split(" ")
         f.close()
-      except:
-        print "CALL CACHE_OR_REQUEST"
+      except Exception as e:
+        print "CALL CACHE_OR_REQUEST", filepath
         self.cache_or_request()
         return
       print "IN-CACHE", firstline
@@ -150,7 +152,8 @@ class ProxyHandler(StreamRequestHandler):
         working_lock.release()
 
         os.system("echo ~empty~ > " + filepath + " & date >> " + filepath)
-        # lock.release()
+        lock.release()
+        print "UNLOCK"
         self.request_to_server()
       except Exception as e:
         os.system("rm " + filepath)
@@ -163,7 +166,7 @@ class ProxyHandler(StreamRequestHandler):
     else:
       filename = key
 
-    return cache_dir + "/" + filename.replace("/","#").replace("&","~").replace(";",":").replace("|","-").replace("<","[").replace(">","]").replace("?",",")
+    return cache_dir + "/" + filename.replace("/","#").replace("&","~").replace(";",":").replace("|","-").replace("<","[").replace(">","]").replace("?",",").replace("(","{").replace(")","}").replace("$","%")
   
   def handle(self):
     try:
@@ -188,12 +191,13 @@ class ProxyHandler(StreamRequestHandler):
     except exc.MalformedFirstline:
       # self.connection.send("")
       pass
-    # except Exception as e:
-    #   f = open('error.log', 'a')
-    #   f.write(str(type(e)) + ', ' + str(e) + '\n')
-    #   f.close()
+    except Exception as e:
+      f = open('error.log', 'a')
+      f.write(str(type(e)) + ', ' + str(e) + '\n')
+      f.write(traceback.format_exc())
+      f.close()
 
-    #   raise e
+      raise e
 
       # print "---------------------------------------------------------------"
       # print type(e), e
@@ -203,7 +207,7 @@ class ProxyHandler(StreamRequestHandler):
     
 if __name__ == "__main__":
   server_address = ('127.0.0.1', 1234)
-  f = open('log', 'w')
+  f = open('error.log', 'w')
   f.close()
   proxyserver = ThreadingProxyServer(server_address, ProxyHandler)
   print 'proxy serving on %r' % (server_address,)
