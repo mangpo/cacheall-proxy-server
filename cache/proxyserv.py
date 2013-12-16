@@ -95,7 +95,7 @@ class ProxyHandler(StreamRequestHandler):
         firstline = f.readline()
         create_date = f.readline().split(" ")
         f.close()
-      except Exception as e:
+      except IOError:
         print "CALL CACHE_OR_REQUEST", filepath
         self.cache_or_request()
         return
@@ -123,7 +123,7 @@ class ProxyHandler(StreamRequestHandler):
           firstline = f.readline()
           create_date = f.readline().split(" ")
           f.close()
-        except:
+        except IOError:
           print "CALL CACHE_OR_REQUEST"
           self.cache_or_request()
           return
@@ -133,7 +133,7 @@ class ProxyHandler(StreamRequestHandler):
         f = open(filepath, 'r')
         response = f.read()
         f.close()
-      except:
+      except IOError:
         print "CALL CACHE_OR_REQUEST"
         self.cache_or_request()
         return
@@ -156,8 +156,14 @@ class ProxyHandler(StreamRequestHandler):
         print "UNLOCK"
         self.request_to_server()
       except Exception as e:
+        f = open('error.log', 'a')
+        f.write(str(type(e)) + ', ' + str(e) + '\n')
+        f.write(traceback.format_exc())
+        f.close()
+
         os.system("rm " + filepath)
         print "CLEAN-UP: rm", filepath
+        print traceback.format_exc()
         raise e
 
   def key_to_filepath(self, key):
