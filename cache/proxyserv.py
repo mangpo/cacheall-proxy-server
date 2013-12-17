@@ -19,6 +19,7 @@ read_from_cache = True
 save_to_cache = True
 lock = Lock()
 redirect_map = {}
+cache_set = set()
 
 working = []
 working_lock = Lock()
@@ -65,9 +66,8 @@ class ProxyHandler(StreamRequestHandler):
       if redirect_url in redirect_map and redirect_map[redirect_url] == key:
         print "DEL", redirect_url
         del redirect_map[redirect_url]
-        st, o = commands.getstatusoutput("rm " + self.key_to_filepath(redirect_url))
-        print "rm", self.key_to_filepath(redirect_url)
-        print st, o
+        cache_set.remove(key)
+        os.system("rm " + self.key_to_filepath(redirect_url))
     # END: Remove redirect cycle of size two.
 
     response = str(response)
@@ -84,10 +84,12 @@ class ProxyHandler(StreamRequestHandler):
     
   def cache_or_request(self):
     filepath = self.filepath
+    key = self.key
     print "LOCK"
     lock.acquire()
-    status, output = commands.getstatusoutput("ls " + filepath)
-    if read_from_cache and status == 0 and output.find("cannot access") == -1:
+    #status, output = commands.getstatusoutput("ls " + filepath)
+    #if read_from_cache and status == 0 and output.find("cannot access") == -1:
+    if read_from_cache and key in cache_set:
       lock.release()
       print "UNLOCK"
       try:
@@ -115,6 +117,7 @@ class ProxyHandler(StreamRequestHandler):
 
         if current_day != create_day or \
               current_time[0]*60 + current_time[1] > create_time[0]*60 + create_time[1] + 1:
+          cache_set.remove(key)
           os.system("rm " + filepath)
           print "BREAKING THE LOOP!!!!!!!!!!!!!!!!!!!!!!!!!"
         
@@ -152,6 +155,7 @@ class ProxyHandler(StreamRequestHandler):
         working_lock.release()
 
         os.system("echo ~empty~ > " + filepath + " & date >> " + filepath)
+        cache_set.add(key)
         lock.release()
         print "UNLOCK"
         self.request_to_server()
@@ -161,6 +165,7 @@ class ProxyHandler(StreamRequestHandler):
         f.write(traceback.format_exc())
         f.close()
 
+        cache_set.remove(key)
         os.system("rm " + filepath)
         print "CLEAN-UP: rm", filepath
         print traceback.format_exc()
