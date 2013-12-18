@@ -66,7 +66,7 @@ class ProxyHandler(StreamRequestHandler):
       if redirect_url in redirect_map and redirect_map[redirect_url] == key:
         print "DEL", redirect_url
         del redirect_map[redirect_url]
-        cache_set.remove(key)
+        cache_set.remove(redirect_url)
         os.system("rm " + self.key_to_filepath(redirect_url))
     # END: Remove redirect cycle of size two.
 
