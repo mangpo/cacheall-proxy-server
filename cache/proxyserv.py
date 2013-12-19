@@ -65,9 +65,11 @@ class ProxyHandler(StreamRequestHandler):
       # Detect cycle.
       if redirect_url in redirect_map and redirect_map[redirect_url] == key:
         print "DEL", redirect_url
+        lock.acquire()
         del redirect_map[redirect_url]
         cache_set.remove(redirect_url)
         os.system("rm " + self.key_to_filepath(redirect_url))
+        lock.release()
     # END: Remove redirect cycle of size two.
 
     response = str(response)
@@ -117,8 +119,10 @@ class ProxyHandler(StreamRequestHandler):
 
         if current_day != create_day or \
               current_time[0]*60 + current_time[1] > create_time[0]*60 + create_time[1] + 1:
+          lock.acquire()
           cache_set.remove(key)
           os.system("rm " + filepath)
+          lock.release()
           print "BREAKING THE LOOP!!!!!!!!!!!!!!!!!!!!!!!!!"
         
         try:
@@ -165,8 +169,10 @@ class ProxyHandler(StreamRequestHandler):
         f.write(traceback.format_exc())
         f.close()
 
+        lock.acquire()
         cache_set.remove(key)
         os.system("rm " + filepath)
+        lock.release()
         print "CLEAN-UP: rm", filepath
         print traceback.format_exc()
         raise e
