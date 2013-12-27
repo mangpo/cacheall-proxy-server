@@ -11,6 +11,7 @@ except ImportError:
 from SocketServer import TCPServer, StreamRequestHandler, ThreadingMixIn
 from httpmessage import HttpMessage
 import httpmessage.exc as exc
+import socket
 
 from multiprocessing import Lock
 import commands, os, hashlib, threading, traceback
@@ -39,9 +40,12 @@ class ProxyHandler(StreamRequestHandler):
     request = self.request
     filepath = self.filepath
     key = self.key
+    redirect_url = None
 
     print "SEND REQUEST"
-    response = request.fetch_response()
+    sock = socket.socket()
+    sock.connect(('127.0.0.1',1235))
+    response = request.fetch_response(sock=sock)
     response.connection = 'close'
     print "RESP", response.firstline, response.status_code, response.server, response.location
     
@@ -71,7 +75,8 @@ class ProxyHandler(StreamRequestHandler):
     # END: Remove redirect cycle of size two.
 
     response = str(response)
-    if save_to_cache:
+    if save_to_cache and not (key == redirect_url):
+      print "SAVE", key
       f = open(filepath, 'w')
       f.write(response)
       f.close()
