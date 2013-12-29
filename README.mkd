@@ -10,21 +10,21 @@ Features
 Installations
 -------------
 
-- Download [sslstrip](http://www.thoughtcrime.org/software/sslstrip). 
-- tar zxvf sslstrip-0.9.tar.gz
+Download [sslstrip](http://www.thoughtcrime.org/software/sslstrip). 
+Run `tar zxvf sslstrip-0.9.tar.gz`
 
 Running Caching Proxy Server
 ----------------------------
 
-1. Start SSL Strip proxy server.
-``python sslstrip.py -l 1235``
+- Start SSL Strip proxy server.
+```python sslstrip.py -l 1235```
 
-2. Start the proxy server.
-``python proxyserv.py``
+- Start the proxy server.
+```python proxyserv.py```
 
 It will create default `../.cache` directory to store cached pages from the current path you run. You can specify cache directory by running the program with an argument as follow.
 
-``python proxyserv.py <path_to_cache_dir>``
+```python proxyserv.py <path_to_cache_dir>```
 
-3. Configure client programs to direct HTTP traffic through `localhost` port `1234`. Do not direct HTTPS or SSL through the proxy. We only handle HTTPS using SSL Strip.
+- Configure client programs to direct HTTP traffic through `localhost` port `1234`. Do not direct HTTPS or SSL through the proxy. We only handle HTTPS using SSL Strip.
 
