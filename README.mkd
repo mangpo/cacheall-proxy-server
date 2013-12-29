@@ -17,14 +17,20 @@ Running Caching Proxy Server
 ----------------------------
 
 - Start SSL Strip proxy server.
-```python sslstrip.py -l 1235```
+```
+python sslstrip.py -l 1235
+```
 
 - Start the proxy server.
-```python proxyserv.py```
+```
+python proxyserv.py
+```
 
 It will create default `../.cache` directory to store cached pages from the current path you run. You can specify cache directory by running the program with an argument as follow.
 
-```python proxyserv.py <path_to_cache_dir>```
+```
+python proxyserv.py <path_to_cache_dir>
+```
 
 - Configure client programs to direct HTTP traffic through `localhost` port `1234`. Do not direct HTTPS or SSL through the proxy. We only handle HTTPS using SSL Strip.
 
