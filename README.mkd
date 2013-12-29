@@ -7,12 +7,6 @@ Features
 - Cache HTTPS responses when redirecting, but do not handle direct HTTPS requests. Rely on SSL Strip for this HTTPS support.
 
 
-Requirements
-------------
-
-* [sslstrip](http://www.thoughtcrime.org/software/sslstrip)
-
-
 Installations
 -------------
 
@@ -23,14 +17,14 @@ Running Caching Proxy Server
 ----------------------------
 
 1. Start SSL Strip proxy server.
-python sslstrip.py -l 1235
+``python sslstrip.py -l 1235``
 
 2. Start the proxy server.
-python proxyserv.py
+``python proxyserv.py``
 
-It will create default ../.cache directory to store cached pages from the current path you run. You can specify cache directory by running the program with an argument as follow.
+It will create default `../.cache` directory to store cached pages from the current path you run. You can specify cache directory by running the program with an argument as follow.
 
-python proxyserv.py <path_to_cache_dir>
+``python proxyserv.py <path_to_cache_dir>``
 
-3. Configure client programs to direct HTTP traffic through localhost port 1234. Do not direct HTTPS or SSL through the proxy. We only handle HTTPS using SSL Strip.
+3. Configure client programs to direct HTTP traffic through `localhost` port `1234`. Do not direct HTTPS or SSL through the proxy. We only handle HTTPS using SSL Strip.
 
