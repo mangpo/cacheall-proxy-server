@@ -26,7 +26,7 @@ python sslstrip.py -l 1235
 python proxyserv.py
 ```
 
-It will create default `../.cache` directory to store cached pages from the current path you run. You can specify cache directory by running the program with an argument as follow.
+It will create default `.cache` directory to store cached pages from the current path you run. You can specify cache directory by running the program with an argument as follow.
 
 ```
 python proxyserv.py path/to/cache/dir
