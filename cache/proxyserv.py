@@ -1,10 +1,10 @@
 #!/usr/bin/evn python
-# examples/proxyserv_v1.py
+
+import sys
 
 try:
   import httpmessage
 except ImportError:
-  import sys
   from os.path import dirname, abspath, join
   sys.path.append(abspath(join(dirname(__file__), '..')))
   
@@ -82,7 +82,8 @@ class ProxyHandler(StreamRequestHandler):
       f.close()
       
     working_lock.acquire()
-    working.remove(filepath)
+    while filepath in working:
+      working.remove(filepath)
     working_lock.release()
 
     self.connection.send(response)
@@ -222,14 +223,12 @@ if __name__ == "__main__":
   f.close()
   proxyserver = ThreadingProxyServer(server_address, ProxyHandler)
   print 'proxy serving on %r' % (server_address,)
-  print 'sys.args', len(sys.argv)
-  os.system("pwd")
 
   if len(sys.argv) > 1:
     cache_dir = sys.argv[1]
 
   os.system("mkdir " + cache_dir)
-  print cache_dir
+  print "cache directory:", cache_dir
 
   try:
     proxyserver.serve_forever()
