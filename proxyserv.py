@@ -1,6 +1,6 @@
 #!/usr/bin/evn python
 
-import sys
+import sys, re
 
 try:
   import httpmessage
@@ -25,6 +25,7 @@ working = []
 working_lock = Lock()
 
 cache_dir = ".cache"
+determinize = None
 
 class ThreadingProxyServer(ThreadingMixIn, TCPServer):
   allow_reuse_address = True
@@ -75,6 +76,32 @@ class ProxyHandler(StreamRequestHandler):
     # END: Remove redirect cycle of size two.
 
     response = str(response)
+    # insert = re.search('<head>',response,re.IGNORECASE)
+    # if insert:
+    #   insert = insert.end() + 1
+    #   response = response[:insert] + determinize + response[insert:]
+    # else:
+    #   insert = re.search('<body',response,re.IGNORECASE)
+    #   if insert:
+    #     insert = insert.start()
+    #     response = response[:insert] + "<head>" + determinize + "</head>" + response[insert:]
+    #   else:
+    #     insert = re.search('<html>',response,re.IGNORECASE)
+    #     if insert != -1:
+    #       insert = insert + len("<html>")
+    #       response = response[:insert] + determinize + response[insert:]
+
+    
+    insert = re.search('< *head.*>',response,re.IGNORECASE)
+    if insert:
+      insert = insert.end()
+      response = response[:insert] + determinize + response[insert:]
+    else:
+      insert = re.search('< *html.*>',response,re.IGNORECASE)
+      if insert:
+        insert = insert.end()
+        response = response[:insert] + "<head>" + determinize + "</head>" + response[insert:]
+
     if save_to_cache and not (key == redirect_url):
       print "SAVE", key
       f = open(filepath, 'w')
@@ -220,6 +247,9 @@ class ProxyHandler(StreamRequestHandler):
 if __name__ == "__main__":
   server_address = ('127.0.0.1', 1234)
   f = open('error.log', 'w')
+  f.close()
+  f = open('determinize.js')
+  determinize = f.read()
   f.close()
   proxyserver = ThreadingProxyServer(server_address, ProxyHandler)
   print 'proxy serving on %r' % (server_address,)
