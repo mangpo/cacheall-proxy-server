@@ -104,6 +104,7 @@ class ProxyHandler(StreamRequestHandler):
 
       # count content_type
       if type_on:
+        type_lock.acquire()
         if type_match:
           t = type_match.group(2)
           if t in type_map:
@@ -115,6 +116,7 @@ class ProxyHandler(StreamRequestHandler):
         for key in type_map:
           f.write(key + "," + str(type_map[key]) + "\n")
         f.close()
+        type_lock.release()
       
     working_lock.acquire()
     while filepath in working:
