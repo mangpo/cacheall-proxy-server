@@ -1,6 +1,7 @@
 #!/usr/bin/evn python
 
 import sys, re
+from optparse import OptionParser
 
 try:
   import httpmessage
@@ -24,11 +25,11 @@ redirect_map = {}
 working = []
 working_lock = Lock()
 
-cache_dir = ".cache"
+cache_dir = None
 determinize = None
 
 # Set type_on = False if do not want to dump content-type counts
-type_on = True
+type_on = None
 type_file = "content-type.csv"
 type_map = {}
 type_lock = Lock()
@@ -83,18 +84,20 @@ class ProxyHandler(StreamRequestHandler):
 
     response = str(response)
     type_match = None
+
     if type_on:
       type_match = re.search('(Content-Type *: *) *([^;\n]*)',response,re.IGNORECASE)
     
-    insert = re.search('< *head[^>]*>',response,re.IGNORECASE)
-    if insert:
-      insert = insert.end()
-      response = response[:insert] + determinize + response[insert:]
-    else:
-      insert = re.search('< *html[^>]*>',response,re.IGNORECASE)
+    if determinize:
+      insert = re.search('< *head[^>]*>',response,re.IGNORECASE)
       if insert:
         insert = insert.end()
-        response = response[:insert] + "<head>" + determinize + "</head>" + response[insert:]
+        response = response[:insert] + determinize + response[insert:]
+      else:
+        insert = re.search('< *html[^>]*>',response,re.IGNORECASE)
+        if insert:
+          insert = insert.end()
+          response = response[:insert] + "<head>" + determinize + "</head>" + response[insert:]
 
     if save_to_cache and not (key == redirect_url):
       print "SAVE", key
@@ -255,17 +258,24 @@ class ProxyHandler(StreamRequestHandler):
     #   self.connection.send("")
     
 if __name__ == "__main__":
+
+  parser = OptionParser()
+  parser.add_option("-d", "--cache-dir", default=".cache")
+  parser.add_option("-i", "--insert", default=False)
+  parser.add_option("-c", "--count", action="store_true", default=False)
+  (options, args) = parser.parse_args()
+
+
+  determinize = options.insert
+  # f = open('determinize.js')
+  # determinize = f.read()
+  # f.close()
+  type_on = options.count
+  cache_dir = options.cache_dir
+
   server_address = ('127.0.0.1', 1234)
-  f = open('error.log', 'w')
-  f.close()
-  f = open('determinize.js')
-  determinize = f.read()
-  f.close()
   proxyserver = ThreadingProxyServer(server_address, ProxyHandler)
   print 'proxy serving on %r' % (server_address,)
-
-  if len(sys.argv) > 1:
-    cache_dir = sys.argv[1]
 
   os.system("mkdir " + cache_dir)
   print "cache directory:", cache_dir

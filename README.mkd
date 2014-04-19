@@ -26,11 +26,24 @@ python sslstrip.py -l 1235
 python proxyserv.py
 ```
 
-It will create default `.cache` directory to store cached pages from the current path you run. You can specify cache directory by running the program with an argument as follow.
+It will create default `.cache` directory to store cached pages from the current path you run. You can specify cache directory by running the program with -d flag.
 
 ```
-python proxyserv.py path/to/cache/dir
+python proxyserv.py -d path/to/cache/dir
 ```
+
+Specify -i flag with string to be inserted as the element in <head>. For example,
+
+```
+python proxyserv.py -i "<script>alert(\"I am an alert box.\");</script>"
+```
+
+Specify -c flag wihtout argument to make the proxy server dumps content-type.csv file that counts the numbers of requests categorized by Content-Type.
+
+```
+python proxyserv.py -c
+```
+
 
 - Configure client programs to direct HTTP traffic through `localhost` port `1234`. Do not direct HTTPS or SSL through the proxy. We only handle HTTPS using SSL Strip.
 
