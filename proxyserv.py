@@ -27,6 +27,12 @@ working_lock = Lock()
 cache_dir = ".cache"
 determinize = None
 
+# Set type_on = False if do not want to dump content-type counts
+type_on = True
+type_file = "content-type.csv"
+type_map = {}
+type_lock = Lock()
+
 class ThreadingProxyServer(ThreadingMixIn, TCPServer):
   allow_reuse_address = True
   daemon_threads = True
@@ -76,28 +82,16 @@ class ProxyHandler(StreamRequestHandler):
     # END: Remove redirect cycle of size two.
 
     response = str(response)
-    # insert = re.search('<head>',response,re.IGNORECASE)
-    # if insert:
-    #   insert = insert.end() + 1
-    #   response = response[:insert] + determinize + response[insert:]
-    # else:
-    #   insert = re.search('<body',response,re.IGNORECASE)
-    #   if insert:
-    #     insert = insert.start()
-    #     response = response[:insert] + "<head>" + determinize + "</head>" + response[insert:]
-    #   else:
-    #     insert = re.search('<html>',response,re.IGNORECASE)
-    #     if insert != -1:
-    #       insert = insert + len("<html>")
-    #       response = response[:insert] + determinize + response[insert:]
-
+    type_match = None
+    if type_on:
+      type_match = re.search('(Content-Type *: *) *([^;\n]*)',response,re.IGNORECASE)
     
-    insert = re.search('< *head.*>',response,re.IGNORECASE)
+    insert = re.search('< *head[^>]*>',response,re.IGNORECASE)
     if insert:
       insert = insert.end()
       response = response[:insert] + determinize + response[insert:]
     else:
-      insert = re.search('< *html.*>',response,re.IGNORECASE)
+      insert = re.search('< *html[^>]*>',response,re.IGNORECASE)
       if insert:
         insert = insert.end()
         response = response[:insert] + "<head>" + determinize + "</head>" + response[insert:]
@@ -107,6 +101,20 @@ class ProxyHandler(StreamRequestHandler):
       f = open(filepath, 'w')
       f.write(response)
       f.close()
+
+      # count content_type
+      if type_on:
+        if type_match:
+          t = type_match.group(2)
+          if t in type_map:
+            type_map[t] = type_map[t] + 1
+          else:
+            type_map[t] = 1
+
+        f = open(type_file,'w')
+        for key in type_map:
+          f.write(key + "," + str(type_map[key]) + "\n")
+        f.close()
       
     working_lock.acquire()
     while filepath in working:
