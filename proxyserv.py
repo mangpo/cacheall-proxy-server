@@ -8,14 +8,19 @@ try:
 except ImportError:
   from os.path import dirname, abspath, join
   sys.path.append(abspath(join(dirname(__file__), '..')))
-  
+
 from SocketServer import TCPServer, StreamRequestHandler, ThreadingMixIn
+from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 from httpmessage import HttpMessage
+from PooledProcessMixIn import PooledProcessMixIn
 import httpmessage.exc as exc
 import socket
 
 from multiprocessing import Lock
 import commands, os, hashlib, threading, traceback
+
+n_process = 8
+n_thread = 16
 
 read_from_cache = True
 save_to_cache = True
@@ -37,6 +42,12 @@ type_lock = Lock()
 class ThreadingProxyServer(ThreadingMixIn, TCPServer):
   allow_reuse_address = True
   daemon_threads = True
+
+class PooledProxyServer(PooledProcessMixIn, HTTPServer):
+  def __init__(self,address,handler):
+    self._process_n=n_process  # if not set will default to number of CPU cores
+    self._thread_n=n_thread  # if not set will default to number of threads
+    HTTPServer.__init__(self, address, handler)
   
 class ProxyHandler(StreamRequestHandler):
   
@@ -274,7 +285,8 @@ if __name__ == "__main__":
   cache_dir = options.cache_dir
 
   server_address = ('127.0.0.1', 1234)
-  proxyserver = ThreadingProxyServer(server_address, ProxyHandler)
+  #proxyserver = ThreadingProxyServer(server_address, ProxyHandler)
+  proxyserver = PooledProxyServer(server_address, ProxyHandler)
   print 'proxy serving on %r' % (server_address,)
 
   os.system("mkdir " + cache_dir)
