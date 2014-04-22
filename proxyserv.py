@@ -281,7 +281,7 @@ if __name__ == "__main__":
     f = open('determinize.js')
     determinize_file = f.read()
     f.close()
-    determinize ="<script>"+determinize_file+"determinize("+determinize_arg+");</script>"
+    determinize ="<script>"+determinize_file+"determinize("+determinize+");</script>"
   type_on = options.count
   cache_dir = options.cache_dir
 
