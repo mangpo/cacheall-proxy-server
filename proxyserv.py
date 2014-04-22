@@ -276,11 +276,12 @@ if __name__ == "__main__":
   parser.add_option("-c", "--count", action="store_true", default=False)
   (options, args) = parser.parse_args()
 
-  determinize_arg = options.insert
-  f = open('determinize.js')
-  determinize = f.read()
-  f.close()
-  determinizie ="<script>"+determinize+"determinize("+determinize_arg+");</script>"
+  determinize = options.insert
+  if (determinize):
+    f = open('determinize.js')
+    determinize_file = f.read()
+    f.close()
+    determinize ="<script>"+determinize_file+"determinize("+determinize_arg+");</script>"
   type_on = options.count
   cache_dir = options.cache_dir
 
