@@ -1,5 +1,3 @@
-<script>
-
 /**
  * All code is in an anonymous closure to keep the global namespace clean.
  */
@@ -188,17 +186,12 @@ if (module && module.exports) {
   'random'// rngname: name for Math.random and Math.seedrandom
 );
 		   
-function determinize(){
+function determinize(millis){
 
     var OrigDate = Date;
-    Date = function(){return new OrigDate("Thu Apr 17 2014 11:30:47 GMT-0700 (PDT)");};
+    Date = function(){return new OrigDate(millis);};
     
-    Math.seedrandom("yay");
-    Math.oldRandom = Math.random;
-    Math.random = function(){var r = Math.oldRandom(); console.log(r); return r;};
+    Math.seedrandom(millis);
 
     window.performance.timing = {};
  }
-
-determinize();
-</script>
