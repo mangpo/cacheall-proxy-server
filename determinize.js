@@ -193,5 +193,5 @@ function determinize(millis){
     
     Math.seedrandom(millis);
 
-    window.performance.timing = {};
+    window.performance = {};
  }
