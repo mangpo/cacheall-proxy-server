@@ -147,7 +147,7 @@ class ProxyHandler(StreamRequestHandler):
     filepath = self.filepath
     print "LOCK"
     lock.acquire()
-    if read_from_cache and key in cache_set:
+    if read_from_cache and self.key in cache_set:
       lock.release()
       print "UNLOCK"
       try:
@@ -176,7 +176,7 @@ class ProxyHandler(StreamRequestHandler):
         if current_day != create_day or \
               current_time[0]*60 + current_time[1] > create_time[0]*60 + create_time[1] + 1:
           lock.acquire()
-          cache_set.remove(key)
+          cache_set.remove(self.key)
           os.system("rm " + filepath)
           lock.release()
           print "BREAKING THE LOOP!!!!!!!!!!!!!!!!!!!!!!!!!"
@@ -215,7 +215,7 @@ class ProxyHandler(StreamRequestHandler):
         working_lock.release()
 
         os.system("echo ~empty~ > " + filepath + " & date >> " + filepath)
-        cache_set.add(key)
+        cache_set.add(self.key)
         lock.release()
         print "UNLOCK"
         self.request_to_server()
@@ -226,7 +226,7 @@ class ProxyHandler(StreamRequestHandler):
         f.close()
 
         lock.acquire()
-        cache_set.remove(key)
+        cache_set.remove(self.key)
         os.system("rm " + filepath)
         lock.release()
         print "CLEAN-UP: rm", filepath
