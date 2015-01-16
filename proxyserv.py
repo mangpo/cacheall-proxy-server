@@ -16,7 +16,7 @@ from PooledProcessMixIn import PooledProcessMixIn
 import httpmessage.exc as exc
 import socket
 
-from multiprocessing import Lock
+from multiprocessing import Lock, Process
 import commands, os, hashlib, threading, traceback
 
 n_process = 8
@@ -211,7 +211,18 @@ class ProxyHandler(StreamRequestHandler):
         os.system("echo ~empty~ > " + filepath + " & date >> " + filepath)
         lock.release()
         print "UNLOCK"
-        self.request_to_server()
+        p = Process(target=(lambda:self.request_to_server()))
+        p.start()
+        p.join(10)
+        if p.is_alive():
+          print "waiting... let's kill it..."
+          p.terminate()
+          p.join()
+
+          os.system("rm " + filepath)
+          working_lock.acquire()
+          working.remove(filepath)
+          working_lock.release()
       except Exception as e:
         f = open('error.log', 'a')
         f.write(str(type(e)) + ', ' + str(e) + '\n')
