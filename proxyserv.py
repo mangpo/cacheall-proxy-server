@@ -38,6 +38,7 @@ type_on = None
 type_file = "content-type.csv"
 type_map = {}
 type_lock = Lock()
+count = 0
 
 class ThreadingProxyServer(ThreadingMixIn, TCPServer):
   allow_reuse_address = True
@@ -67,6 +68,13 @@ class ProxyHandler(StreamRequestHandler):
     response = request.fetch_response(sock=sock)
     response.connection = 'close'
     print "RESP", response.firstline, response.status_code, response.server, response.location
+
+    # count += 1
+
+    # # Clear redirect map
+    # if count > 1000:
+    #   count = 0
+    #   redirect_url = {}
     
     # Remove redirect cycle of size two.
     if response.location:
@@ -118,7 +126,7 @@ class ProxyHandler(StreamRequestHandler):
 
       # count content_type
       if type_on:
-        type_lock.acquire()
+        #type_lock.acquire()
         if type_match:
           t = type_match.group(2)
           if t in type_map:
@@ -130,22 +138,22 @@ class ProxyHandler(StreamRequestHandler):
         for key in type_map:
           f.write(key + "," + str(type_map[key]) + "\n")
         f.close()
-        type_lock.release()
+        #type_lock.release()
       
-    working_lock.acquire()
+    #working_lock.acquire()
     while filepath in working:
       working.remove(filepath)
-    working_lock.release()
+    #working_lock.release()
 
     self.connection.send(response)
     
   def cache_or_request(self):
     filepath = self.filepath
     print "LOCK"
-    lock.acquire()
+    #lock.acquire()
     status, output = commands.getstatusoutput("ls " + filepath)
     if read_from_cache and status == 0 and output.find("cannot access") == -1:
-      lock.release()
+      #lock.release()
       print "UNLOCK"
       try:
         f = open(filepath, 'r')
@@ -204,12 +212,12 @@ class ProxyHandler(StreamRequestHandler):
 
       try:
         # Placeholder for locking.
-        working_lock.acquire()
+        #working_lock.acquire()
         working.append(filepath)
-        working_lock.release()
+        #working_lock.release()
 
         os.system("echo ~empty~ > " + filepath + " & date >> " + filepath)
-        lock.release()
+        #lock.release()
         print "UNLOCK"
         p = Process(target=(lambda:self.request_to_server()))
         p.start()
@@ -220,9 +228,9 @@ class ProxyHandler(StreamRequestHandler):
           p.join()
 
           os.system("rm " + filepath)
-          working_lock.acquire()
+          #working_lock.acquire()
           working.remove(filepath)
-          working_lock.release()
+          #working_lock.release()
       except Exception as e:
         f = open('error.log', 'a')
         f.write(str(type(e)) + ', ' + str(e) + '\n')
@@ -311,4 +319,5 @@ if __name__ == "__main__":
       print "CLEAN-UP: rm", f
       os.system("rm " + f)
     print '\nexiting...'
+    print "Redirect!!!!!!!!!!!!!!!!!!", len(redirect_map)
 
