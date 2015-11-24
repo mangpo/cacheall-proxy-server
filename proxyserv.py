@@ -121,10 +121,6 @@ class ProxyHandler(StreamRequestHandler):
     if save_to_cache and not (key == redirect_url):
       # print "SAVE", key
 
-      if not os.path.exists(os.path.dirname(filepath)):
-        print "trying to make", os.path.dirname(filepath)
-        os.makedirs(os.path.dirname(filepath))
-
       f = open(filepath, 'w')
       f.write(response)
       f.close()
@@ -255,7 +251,14 @@ class ProxyHandler(StreamRequestHandler):
     if len(cleanedfilename) > 255:
       cleanedfilename = hashlib.sha512(cleanedfilename).hexdigest()
 
-    return cache_dir + "/" + direc + "/" + cleanedfilename 
+    path = cache_dir + "/" + direc + "/" + cleanedfilename 
+
+    #make sure this path can be used
+    if not os.path.exists(os.path.dirname(filepath)):
+      print "trying to make", os.path.dirname(filepath)
+      os.makedirs(os.path.dirname(filepath))
+
+    return path
 
   def handle(self):
     try:
