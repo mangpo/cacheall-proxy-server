@@ -122,6 +122,7 @@ class ProxyHandler(StreamRequestHandler):
       # print "SAVE", key
 
       if not os.path.exists(os.path.dirname(filepath)):
+        print "trying to make", os.path.dirname(filepath)
         os.makedirs(os.path.dirname(filepath))
 
       f = open(filepath, 'w')
