@@ -62,12 +62,12 @@ class ProxyHandler(StreamRequestHandler):
     key = self.key
     redirect_url = None
 
-    print "SEND REQUEST"
+    # print "SEND REQUEST"
     sock = socket.socket()
     sock.connect(('127.0.0.1',1235))
     response = request.fetch_response(sock=sock)
     response.connection = 'close'
-    print "RESP", response.firstline, response.status_code, response.server, response.location
+    # print "RESP", response.firstline, response.status_code, response.server, response.location
 
     # count += 1
 
@@ -78,7 +78,7 @@ class ProxyHandler(StreamRequestHandler):
     
     # Remove redirect cycle of size two.
     if response.location:
-      print "REDIRECT"
+      # print "REDIRECT"
       redirect_url = response.location
       for part in response.location.split("&"):
         if part[0:9] == "continue=":
@@ -90,15 +90,15 @@ class ProxyHandler(StreamRequestHandler):
         
       redirect_url = redirect_url.replace("%3D","=")
       redirect_map[key] = redirect_url
-      print "MAP", key, redirect_url
+      # print "MAP", key, redirect_url
         
       # Detect cycle.
       if redirect_url in redirect_map and redirect_map[redirect_url] == key:
-        print "DEL", redirect_url
+        # print "DEL", redirect_url
         del redirect_map[redirect_url]
         st, o = commands.getstatusoutput("rm " + self.key_to_filepath(redirect_url))
-        print "rm", self.key_to_filepath(redirect_url)
-        print st, o
+        # print "rm", self.key_to_filepath(redirect_url)
+        # print st, o
     # END: Remove redirect cycle of size two.
 
     response = str(response)
@@ -119,7 +119,7 @@ class ProxyHandler(StreamRequestHandler):
           response = response[:insert] + "<head>" + determinize + "</head>" + response[insert:]
 
     if save_to_cache and not (key == redirect_url):
-      print "SAVE", key
+      # print "SAVE", key
 
       if not os.path.exists(os.path.dirname(filepath)):
         os.makedirs(os.path.dirname(filepath))
@@ -153,27 +153,27 @@ class ProxyHandler(StreamRequestHandler):
     
   def cache_or_request(self):
     filepath = self.filepath
-    print "LOCK"
+    # print "LOCK"
     #lock.acquire()
     status, output = commands.getstatusoutput("ls " + filepath)
     if read_from_cache and status == 0 and output.find("cannot access") == -1:
       #lock.release()
-      print "UNLOCK"
+      # print "UNLOCK"
       try:
         f = open(filepath, 'r')
         firstline = f.readline()
         create_date = f.readline().split(" ")
         f.close()
       except IOError:
-        print "CALL CACHE_OR_REQUEST", filepath
+        # print "CALL CACHE_OR_REQUEST", filepath
         self.cache_or_request()
         return
-      print "IN-CACHE", firstline
+      # print "IN-CACHE", firstline
       while firstline == "~empty~\n":
-        print "loop on ~empty~"
-        print filepath
+        # print "loop on ~empty~"
+        # print filepath
 
-        # print create_date
+        # # print create_date
         create_day = int(create_date[2])
         create_time = [int(x) for x in create_date[3].split(":")]
         
@@ -185,7 +185,7 @@ class ProxyHandler(StreamRequestHandler):
         if current_day != create_day or \
               current_time[0]*60 + current_time[1] > create_time[0]*60 + create_time[1] + 1:
           os.system("rm " + filepath)
-          print "BREAKING THE LOOP!!!!!!!!!!!!!!!!!!!!!!!!!"
+          # print "BREAKING THE LOOP!!!!!!!!!!!!!!!!!!!!!!!!!"
         
         try:
           f = open(filepath, 'r')
@@ -193,26 +193,26 @@ class ProxyHandler(StreamRequestHandler):
           create_date = f.readline().split(" ")
           f.close()
         except IOError:
-          print "CALL CACHE_OR_REQUEST"
+          # print "CALL CACHE_OR_REQUEST"
           self.cache_or_request()
           return
 
-      print "CACHE-HIT", filepath
+      # print "CACHE-HIT", filepath
       try:
         f = open(filepath, 'r')
         response = f.read()
         f.close()
       except IOError:
-        print "CALL CACHE_OR_REQUEST"
+        # print "CALL CACHE_OR_REQUEST"
         self.cache_or_request()
         return
       self.connection.send(response)
     else:
-      print "CACHE-MISS"
-      # print request.host, request.connection
-      # print request.cache_control, request.accept
-      # print request.user_agent, request.accept_encoding, request.accept_language
-      # print request.cookie
+      # print "CACHE-MISS"
+      # # print request.host, request.connection
+      # # print request.cache_control, request.accept
+      # # print request.user_agent, request.accept_encoding, request.accept_language
+      # # print request.cookie
 
       try:
         # Placeholder for locking.
@@ -222,12 +222,12 @@ class ProxyHandler(StreamRequestHandler):
 
         os.system("echo ~empty~ > " + filepath + " & date >> " + filepath)
         #lock.release()
-        print "UNLOCK"
+        # print "UNLOCK"
         p = Process(target=(lambda:self.request_to_server()))
         p.start()
         p.join(10)
         if p.is_alive():
-          print "waiting... let's kill it..."
+          # print "waiting... let's kill it..."
           p.terminate()
           p.join()
 
@@ -242,8 +242,8 @@ class ProxyHandler(StreamRequestHandler):
         f.close()
 
         os.system("rm " + filepath)
-        print "CLEAN-UP: rm", filepath
-        print traceback.format_exc()
+        # print "CLEAN-UP: rm", filepath
+        # # print traceback.format_exc()
         raise e
 
   def key_to_filepath(self, key):
@@ -260,7 +260,7 @@ class ProxyHandler(StreamRequestHandler):
     try:
       request = HttpMessage(socket=self.connection)
       self.request = request
-      print "BEFORE", request.method, request.host, request.request_uri
+      # print "BEFORE", request.method, request.host, request.request_uri
       
       # Need to modify uri because some websites, such as thefreedictionry.com,
       # handle uri that has host as substring incorrectly.
@@ -272,7 +272,7 @@ class ProxyHandler(StreamRequestHandler):
       self.key = key
       filepath = self.key_to_filepath(key)
       self.filepath = filepath
-      print "AFTER", request.method, key #, filepath
+      # print "AFTER", request.method, key #, filepath
     
       self.cache_or_request()
 
@@ -287,9 +287,9 @@ class ProxyHandler(StreamRequestHandler):
 
       raise e
 
-      # print "---------------------------------------------------------------"
-      # print type(e), e
-      # print "---------------------------------------------------------------"
+      # # print "---------------------------------------------------------------"
+      # # print type(e), e
+      # # print "---------------------------------------------------------------"
 
     #   self.connection.send("")
     
@@ -322,8 +322,8 @@ if __name__ == "__main__":
     proxyserver.serve_forever()
   except KeyboardInterrupt:
     for f in working:
-      print "CLEAN-UP: rm", f
+      # print "CLEAN-UP: rm", f
       os.system("rm " + f)
-    print '\nexiting...'
-    print "Redirect!!!!!!!!!!!!!!!!!!", len(redirect_map)
+    # print '\nexiting...'
+    # print "Redirect!!!!!!!!!!!!!!!!!!", len(redirect_map)
 
