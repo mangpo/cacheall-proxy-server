@@ -120,6 +120,10 @@ class ProxyHandler(StreamRequestHandler):
 
     if save_to_cache and not (key == redirect_url):
       print "SAVE", key
+
+      if not os.path.exists(os.path.dirname(filepath)):
+        os.makedirs(os.path.dirname(filepath))
+
       f = open(filepath, 'w')
       f.write(response)
       f.close()
@@ -243,13 +247,15 @@ class ProxyHandler(StreamRequestHandler):
         raise e
 
   def key_to_filepath(self, key):
-    if len(key) > 255:
-      filename = hashlib.sha512(key).hexdigest()
-    else:
-      filename = key
 
-    return cache_dir + "/" + filename.replace("/","#").replace("&","~").replace(";",":").replace("|","-").replace("<","[").replace(">","]").replace("?",",").replace("(","{").replace(")","}").replace("$","%")
-  
+    cleanedfilename = filename.replace("/","#").replace("&","~").replace(";",":").replace("|","-").replace("<","[").replace(">","]").replace("?",",").replace("(","{").replace(")","}").replace("$","%")
+    direc = cleanedfilename[0:cleanedfilename.index("#")]
+
+    if len(cleanedfilename) > 255:
+      cleanedfilename = hashlib.sha512(cleanedfilename).hexdigest()
+
+    return cache_dir + "/" + direc + "/" + cleanedfilename 
+
   def handle(self):
     try:
       request = HttpMessage(socket=self.connection)
