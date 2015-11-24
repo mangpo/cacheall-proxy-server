@@ -254,9 +254,10 @@ class ProxyHandler(StreamRequestHandler):
     path = cache_dir + "/" + direc + "/" + cleanedfilename 
 
     #make sure this path can be used
-    if not os.path.exists(os.path.dirname(filepath)):
-      print "trying to make", os.path.dirname(filepath)
-      os.makedirs(os.path.dirname(filepath))
+    dirnm = os.path.dirname(path)
+    if not os.path.exists(dirnm):
+      print "trying to make", dirnm
+      os.makedirs(dirnm)
 
     return path
 
