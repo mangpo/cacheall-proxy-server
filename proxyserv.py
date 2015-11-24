@@ -249,7 +249,7 @@ class ProxyHandler(StreamRequestHandler):
   def key_to_filepath(self, key):
 
     cleanedfilename = key.replace("/","#").replace("&","~").replace(";",":").replace("|","-").replace("<","[").replace(">","]").replace("?",",").replace("(","{").replace(")","}").replace("$","%")
-    direc = cleanedfilename[0:cleanedfilename.index("#")]
+    direc = cleanedfilename[0:cleanedfilename.find("#")]
 
     if len(cleanedfilename) > 255:
       cleanedfilename = hashlib.sha512(cleanedfilename).hexdigest()
