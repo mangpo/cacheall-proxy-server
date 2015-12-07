@@ -252,6 +252,7 @@ class ProxyHandler(StreamRequestHandler):
       cleanedfilename = hashlib.sha512(cleanedfilename).hexdigest()
 
     path = cache_dir + "/" + direc + "/" + cleanedfilename 
+    path = path.encode('ascii', 'ignore')
 
     #make sure this path can be used
     dirnm = os.path.dirname(path)
